@@ -8,6 +8,7 @@ public class UserAuthenticationApiApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(UserAuthenticationApiApplication.class, args);
+        System.out.println("Application started");
     }
 
 }
