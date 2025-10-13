@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +23,6 @@ public class AuthenticationService {
     private final UserRepo userRepo;
 
     private final AuthenticationManager authManager;
-
-    private final JwtService jwtService;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -39,18 +38,16 @@ public class AuthenticationService {
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
         user.setAccountVerified(false);
-        sendVerificationCode(user);
+        emailService.createAndSendVerificationEmail(user);
 
-        return null;
+        return userRepo.save(user);
     }
 
     public User authenticate(LoginUserDto loginUserDto) {
         User user = userRepo.findByEmail(loginUserDto.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!user.isAccountVerified()) {
-            throw new RuntimeException("Account not verified.");
-        }
+        user.setAccountVerified(false);
 
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -58,19 +55,50 @@ public class AuthenticationService {
                 )
         );
 
+        emailService.createAndSendVerificationEmail(user);
+
         return user;
     }
 
     public void verifyUser(VerifyUserDto verifyUserDto) {
-        // TODO ADD VERIFICATION CODE CHECK AND JWT GENERATION
-    }
+        Optional<User> optionalUser = userRepo.findByEmail(verifyUserDto.getEmail());
 
-    public void sendVerificationCode(User user) {
-        // TODO ADD VERIFICATION CODE SENDING
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("Verification code has expired.");
+            }
+
+            if (user.getVerificationCode().equals(verifyUserDto.getVerificationCode())) {
+                user.setAccountVerified(true);
+                user.setVerificationCode(null);
+                user.setVerificationCodeExpiresAt(null);
+
+                userRepo.save(user);
+            }
+            else {
+                throw new RuntimeException("Invalid verification code.");
+            }
+        }
+        else {
+            throw new RuntimeException("User not found.");
+        }
     }
 
     public void resendVerificationCode(String email) {
-        // TODO ADD VERIFICATION CODE RESENDING
+        Optional<User> optionalUser = userRepo.findByEmail(email);
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            user.setVerificationCode(generateVerificationCode());
+            user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
+
+            emailService.createAndSendVerificationEmail(user);
+
+            userRepo.save(user);
+        }
     }
 
     private String generateVerificationCode() {
