@@ -27,7 +27,7 @@ public class AuthenticationService {
 
     private final PasswordEncoder passwordEncoder;
 
-    // TODO ADD EMAIL SERVICE
+    private final EmailService emailService;
 
     public User signUp(RegisterUserDto registerUserDto) {
         User user = new User();
