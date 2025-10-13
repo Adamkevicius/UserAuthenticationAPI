@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity(name = "users")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -27,7 +29,7 @@ public class User extends BaseEntity {
 
     private String verificationCode;
 
-    private String verificationCodeExpiresAt;
+    private LocalDateTime verificationCodeExpiresAt;
 
     private boolean isAccountVerified;
 }
