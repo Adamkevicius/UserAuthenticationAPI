@@ -20,9 +20,9 @@ public class EmailService {
 
     private void sendVerificationEmail(String to, String subject, String text) {
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, "true");
 
         try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(text, true);

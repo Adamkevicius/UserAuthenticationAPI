@@ -5,16 +5,18 @@ import com.example.userauthenticationapi.model.enums.Role;
 import com.example.userauthenticationapi.repo.UserRepo;
 import com.example.userauthenticationapi.security.dto.LoginUserDto;
 import com.example.userauthenticationapi.security.dto.RegisterUserDto;
+import com.example.userauthenticationapi.security.dto.ResendVerificationCodeDto;
 import com.example.userauthenticationapi.security.dto.VerifyUserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +30,9 @@ public class AuthenticationService {
 
     private final EmailService emailService;
 
-    public User signUp(RegisterUserDto registerUserDto) {
+    private final JwtService jwtService;
+
+    public void signUp(RegisterUserDto registerUserDto) {
         User user = new User();
 
         user.setEmail(registerUserDto.getEmail());
@@ -38,67 +42,68 @@ public class AuthenticationService {
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
         user.setAccountVerified(false);
-        emailService.createAndSendVerificationEmail(user);
 
-        return userRepo.save(user);
+        emailService.createAndSendVerificationEmail(user);
     }
 
-    public User authenticate(LoginUserDto loginUserDto) {
+    public void authenticate(LoginUserDto loginUserDto) {
         User user = userRepo.findByEmail(loginUserDto.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setAccountVerified(false);
-
-        authManager.authenticate(
+        Authentication auth = authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        loginUserDto.getEmail(), loginUserDto.getPassword()
+                        user.getUsername(), loginUserDto.getPassword()
                 )
         );
 
-        emailService.createAndSendVerificationEmail(user);
-
-        return user;
-    }
-
-    public void verifyUser(VerifyUserDto verifyUserDto) {
-        Optional<User> optionalUser = userRepo.findByEmail(verifyUserDto.getEmail());
-
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-
-            if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Verification code has expired.");
-            }
-
-            if (user.getVerificationCode().equals(verifyUserDto.getVerificationCode())) {
-                user.setAccountVerified(true);
-                user.setVerificationCode(null);
-                user.setVerificationCodeExpiresAt(null);
-
-                userRepo.save(user);
-            }
-            else {
-                throw new RuntimeException("Invalid verification code.");
-            }
-        }
-        else {
-            throw new RuntimeException("User not found.");
-        }
-    }
-
-    public void resendVerificationCode(String email) {
-        Optional<User> optionalUser = userRepo.findByEmail(email);
-
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-
+        if (auth.isAuthenticated()) {
+            user.setAccountVerified(false);
             user.setVerificationCode(generateVerificationCode());
             user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
+            userRepo.save(user);
 
             emailService.createAndSendVerificationEmail(user);
+        }
+    }
+
+    public String verifyUser(VerifyUserDto verifyUserDto) {
+        User user = userRepo.findByEmail(verifyUserDto.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        "No user found with email: " + verifyUserDto.getEmail())
+                );
+        String jwtToken;
+
+        if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("Verification code has expired.");
+        }
+
+        if (user.getVerificationCode().equals(verifyUserDto.getVerificationCode())) {
+            user.setAccountVerified(true);
+            user.setVerificationCode(null);
+            user.setVerificationCodeExpiresAt(null);
 
             userRepo.save(user);
+
+            jwtToken = jwtService.generateToken(user.getUsername());
         }
+        else {
+            throw new RuntimeException("Invalid verification code.");
+        }
+
+        return jwtToken;
+    }
+
+    public void resendVerificationCode(ResendVerificationCodeDto resendVerificationCodeDto) {
+        String email = resendVerificationCodeDto.getEmail();
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("No user found with email: " + email));
+
+        user.setVerificationCode(generateVerificationCode());
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
+
+        userRepo.save(user);
+
+        emailService.createAndSendVerificationEmail(user);
     }
 
     private String generateVerificationCode() {
