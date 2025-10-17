@@ -34,8 +34,12 @@ public class SecurityConfig {
             return httpSecurity
                     .csrf(AbstractHttpConfigurer::disable)
                     .authorizeHttpRequests(request -> request
-                            .requestMatchers( "/authorization/**", "/oauth2/authorization")
-                            .permitAll()
+                            .requestMatchers(
+                                    "/authentication/login",
+                                    "/authentication/signup",
+                                    "/authentication/verification-code/resend",
+                                    "/authentication/verification-code/verify",
+                                    "/oauth2/authentication").permitAll()
                             .anyRequest().authenticated()
                     )
                     .httpBasic(Customizer.withDefaults())
@@ -50,7 +54,7 @@ public class SecurityConfig {
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
@@ -76,5 +80,4 @@ public class SecurityConfig {
             throw new RuntimeException(e);
         }
     }
-
 }

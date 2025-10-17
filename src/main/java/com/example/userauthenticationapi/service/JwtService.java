@@ -21,7 +21,7 @@ public class JwtService {
     @Value("${spring.jwt.secret-key}")
     private String secretKey;
 
-    public String generateToke(String username) {
+    public String generateToken(String username) {
         Map<String, String> claims = new HashMap<>();
         claims.put("issuer", "user-authentication-api");
 
