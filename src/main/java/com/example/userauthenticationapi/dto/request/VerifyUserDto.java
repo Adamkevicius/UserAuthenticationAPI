@@ -1,4 +1,4 @@
-package com.example.userauthenticationapi.security.dto;
+package com.example.userauthenticationapi.dto.request;
 
 import lombok.Data;
 

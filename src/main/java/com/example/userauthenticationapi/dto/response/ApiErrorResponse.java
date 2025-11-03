@@ -1,13 +1,13 @@
-package com.example.userauthenticationapi.security.response;
+package com.example.userauthenticationapi.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@AllArgsConstructor
 @Data
-public class ApiResponse {
+@AllArgsConstructor
+public class ApiErrorResponse {
     private boolean success;
 
     private String message;
