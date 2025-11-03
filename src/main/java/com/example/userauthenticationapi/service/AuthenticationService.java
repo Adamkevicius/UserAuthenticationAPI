@@ -1,17 +1,19 @@
 package com.example.userauthenticationapi.service;
 
+import com.example.userauthenticationapi.exception.ConflictException;
+import com.example.userauthenticationapi.exception.ResourceNotFoundException;
+import com.example.userauthenticationapi.exception.UnauthorizedException;
 import com.example.userauthenticationapi.model.User;
 import com.example.userauthenticationapi.model.enums.Role;
 import com.example.userauthenticationapi.repo.UserRepo;
-import com.example.userauthenticationapi.security.dto.LoginUserDto;
-import com.example.userauthenticationapi.security.dto.RegisterUserDto;
-import com.example.userauthenticationapi.security.dto.ResendVerificationCodeDto;
-import com.example.userauthenticationapi.security.dto.VerifyUserDto;
+import com.example.userauthenticationapi.dto.request.LoginUserDto;
+import com.example.userauthenticationapi.dto.request.RegisterUserDto;
+import com.example.userauthenticationapi.dto.request.ResendVerificationCodeDto;
+import com.example.userauthenticationapi.dto.request.VerifyUserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +37,17 @@ public class AuthenticationService {
     public void signUp(RegisterUserDto registerUserDto) {
         User user = new User();
 
+        String email = registerUserDto.getEmail();
+        String username = registerUserDto.getUsername();
+
+        if (userRepo.existsByEmail(email)) {
+            throw new ConflictException("Email is already registered.");
+        }
+
+        if (userRepo.existsByUsername(username)) {
+            throw new ConflictException("Username already taken.");
+        }
+
         user.setEmail(registerUserDto.getEmail());
         user.setUsername(registerUserDto.getUsername());
         user.setPassword(passwordEncoder.encode(registerUserDto.getPassword()));
@@ -44,11 +57,13 @@ public class AuthenticationService {
         user.setAccountVerified(false);
 
         emailService.createAndSendVerificationEmail(user);
+
+        userRepo.save(user);
     }
 
     public void authenticate(LoginUserDto loginUserDto) {
         User user = userRepo.findByEmail(loginUserDto.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         Authentication auth = authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -56,25 +71,35 @@ public class AuthenticationService {
                 )
         );
 
+        // TODO HANDLE UNAUTHORIZED ERROR
+
         if (auth.isAuthenticated()) {
             user.setAccountVerified(false);
+
+//            if (!user.getVerificationCode().isEmpty() && !user.getVerificationCodeExpiresAt()
+//                    .isBefore(LocalDateTime.now())
+//            ) {
+//                return;
+//            }
+
             user.setVerificationCode(generateVerificationCode());
             user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
             userRepo.save(user);
 
             emailService.createAndSendVerificationEmail(user);
         }
+        else {
+            throw new UnauthorizedException("User is not authenticated. Please log in first.");
+        }
     }
 
     public String verifyUser(VerifyUserDto verifyUserDto) {
         User user = userRepo.findByEmail(verifyUserDto.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        "No user found with email: " + verifyUserDto.getEmail())
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         String jwtToken;
 
         if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Verification code has expired.");
+                throw new UnauthorizedException("Verification code has expired.");
         }
 
         if (user.getVerificationCode().equals(verifyUserDto.getVerificationCode())) {
@@ -87,7 +112,7 @@ public class AuthenticationService {
             jwtToken = jwtService.generateToken(user.getUsername());
         }
         else {
-            throw new RuntimeException("Invalid verification code.");
+            throw new UnauthorizedException("Verification code is invalid.");
         }
 
         return jwtToken;
@@ -96,10 +121,13 @@ public class AuthenticationService {
     public void resendVerificationCode(ResendVerificationCodeDto resendVerificationCodeDto) {
         String email = resendVerificationCodeDto.getEmail();
         User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("No user found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
-        user.setVerificationCode(generateVerificationCode());
-        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
+        String newVerificationCode = generateVerificationCode();
+        LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(5);
+
+        user.setVerificationCode(newVerificationCode);
+        user.setVerificationCodeExpiresAt(expirationTime);
 
         userRepo.save(user);
 
