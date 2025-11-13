@@ -71,7 +71,7 @@ public class AuthenticationService {
                 )
         );
 
-        // TODO HANDLE UNAUTHORIZED ERROR
+        // TODO HANDLE UNAUTHORIZED AND PASSWORD ERRORS
 
         if (auth.isAuthenticated()) {
             user.setAccountVerified(false);
