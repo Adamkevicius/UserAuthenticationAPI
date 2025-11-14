@@ -3,6 +3,7 @@ package com.example.userauthenticationapi.service;
 import com.example.userauthenticationapi.exception.ConflictException;
 import com.example.userauthenticationapi.exception.ResourceNotFoundException;
 import com.example.userauthenticationapi.exception.UnauthorizedException;
+import com.example.userauthenticationapi.exception.ValidationException;
 import com.example.userauthenticationapi.model.User;
 import com.example.userauthenticationapi.model.enums.Role;
 import com.example.userauthenticationapi.repo.UserRepo;
@@ -56,37 +57,36 @@ public class AuthenticationService {
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
         user.setAccountVerified(false);
 
-        emailService.createAndSendVerificationEmail(user);
+        emailService.sendEmail(user);
 
         userRepo.save(user);
     }
 
     public void authenticate(LoginUserDto loginUserDto) {
+        String email = loginUserDto.getEmail();
+        String password = loginUserDto.getPassword();
         User user = userRepo.findByEmail(loginUserDto.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("User with email " + email + " not found."));
+
+        if (!passwordEncoder.matches(password, user.getPassword()))
+        {
+            throw new ValidationException("Password is incorrect.");
+        }
 
         Authentication auth = authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        user.getUsername(), loginUserDto.getPassword()
+                        user.getUsername(), password
                 )
         );
 
-        // TODO HANDLE UNAUTHORIZED AND PASSWORD ERRORS
-
         if (auth.isAuthenticated()) {
             user.setAccountVerified(false);
-
-//            if (!user.getVerificationCode().isEmpty() && !user.getVerificationCodeExpiresAt()
-//                    .isBefore(LocalDateTime.now())
-//            ) {
-//                return;
-//            }
 
             user.setVerificationCode(generateVerificationCode());
             user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(5));
             userRepo.save(user);
 
-            emailService.createAndSendVerificationEmail(user);
+            emailService.sendEmail(user);
         }
         else {
             throw new UnauthorizedException("User is not authenticated. Please log in first.");
@@ -131,7 +131,7 @@ public class AuthenticationService {
 
         userRepo.save(user);
 
-        emailService.createAndSendVerificationEmail(user);
+        emailService.sendEmail(user);
     }
 
     private String generateVerificationCode() {

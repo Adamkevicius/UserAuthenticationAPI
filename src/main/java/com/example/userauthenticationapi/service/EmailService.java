@@ -1,64 +1,60 @@
 package com.example.userauthenticationapi.service;
 
+import com.example.userauthenticationapi.config.SendGridConfig;
 import com.example.userauthenticationapi.model.User;
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
+import com.sendgrid.helpers.mail.objects.Personalization;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class EmailService {
-    private final JavaMailSender mailSender;
 
-    private void sendVerificationEmail(String to, String subject, String text) {
-        MimeMessage message = mailSender.createMimeMessage();
+    private final SendGridConfig sendGrid;
 
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(text, true);
-        } catch (MessagingException e) {
-            throw new RuntimeException(e);
-        }
+    public void sendEmail(User user) {
+        Email to = new Email(user.getEmail());
 
-        mailSender.send(message);
-    }
+        Mail mail = sendGrid.mail();
 
-    public void createAndSendVerificationEmail(User user) {
-        String subject = "Email verification";
-        String verificationCode = user.getVerificationCode();
+        Personalization personalization = new Personalization();
+        personalization.addTo(to);
+        personalization.addDynamicTemplateData("verificationCode", user.getVerificationCode());
+
+        mail.addPersonalization(personalization);
+
+        Request request = new Request();
 
         try {
-            String htmlMessage = loadEmailTemplate(
-                    verificationCode
-            );
-            sendVerificationEmail(user.getEmail(), subject, htmlMessage);
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sendGrid.apiKey().api(request);
+
+            System.out.println("Status: " + response.getStatusCode());
+            System.out.println("Body: " + response.getBody());
+            System.out.println("Headers: " + response.getHeaders());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to send email: " + e.getMessage());
         }
-    }
-
-    private String loadEmailTemplate(String verificationCode) throws IOException {
-        String template;
-        try (InputStream inputStream = getClass()
-                .getClassLoader().getResourceAsStream("templates/verification-email-message.html")) {
-
-            if (inputStream == null) {
-                throw new FileNotFoundException("Template not found" + "templates/verification-email-message.html");
-            }
-
-            template = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        }
-
-        return template.replace("{{verificationCode}}", verificationCode);
     }
 }
