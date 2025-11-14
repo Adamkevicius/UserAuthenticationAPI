@@ -28,14 +28,7 @@ spring:
             client-id: ${FACEBOOK_CLIENT_ID}
             client-secret: ${FACEBOOK_CLIENT_SECRET}
 
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_SENDER_USERNAME}
-    password: ${MAIL_SENDER_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+  sendgrid:
+    api-key: ${SENDGRID-API-KEY}
+    template-id: ${TEMPLATE-ID}
+    sender-name: ${SENDER-NAME}
