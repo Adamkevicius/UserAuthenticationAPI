@@ -72,7 +72,7 @@ public class UserService {
 
     public UserResponse getByEmail(String email) {
         User user = userRepo.findByEmail(email).orElseThrow(
-                () -> new ResourceNotFoundException("User with username: " + email + " not found.")
+                () -> new ResourceNotFoundException("User with email: " + email + " not found.")
         );
 
         return userMapper.toDto(user);
@@ -90,13 +90,13 @@ public class UserService {
 
     public UpdateUserResponse updateById(Long id, UpdateUserDto updateUserDto) {
         isUpdateFieldsValid(
-                updateUserDto.getFullName(),
+                updateUserDto.getEmail(),
                 updateUserDto.getUsername(),
                 updateUserDto.getPassword()
         );
 
         return userRepo.findById(id).map(user -> {
-            user.setFullName(updateUserDto.getFullName());
+            user.setEmail(updateUserDto.getEmail());
             user.setUsername(updateUserDto.getUsername());
             user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
             userRepo.save(user);
@@ -107,13 +107,13 @@ public class UserService {
 
     public UpdateUserResponse updateByUsername(String username, UpdateUserDto updateUserDto) {
         isUpdateFieldsValid(
-                updateUserDto.getFullName(),
+                updateUserDto.getEmail(),
                 updateUserDto.getUsername(),
                 updateUserDto.getPassword()
         );
 
         return userRepo.findByUsername(username).map(user -> {
-            user.setFullName(updateUserDto.getFullName());
+            user.setEmail(updateUserDto.getEmail());
             user.setUsername(updateUserDto.getUsername());
             user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
             userRepo.save(user);
@@ -124,13 +124,13 @@ public class UserService {
 
     public UpdateUserResponse updateByEmail(String email, UpdateUserDto updateUserDto) {
         isUpdateFieldsValid(
-                updateUserDto.getFullName(),
+                updateUserDto.getEmail(),
                 updateUserDto.getUsername(),
                 updateUserDto.getPassword()
         );
 
         return userRepo.findByEmail(email).map(user -> {
-            user.setFullName(updateUserDto.getFullName());
+            user.setFullName(updateUserDto.getEmail());
             user.setUsername(updateUserDto.getUsername());
             user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
             userRepo.save(user);
@@ -191,8 +191,8 @@ public class UserService {
         userRepo.deleteAllInBatch();
     }
 
-    protected void isUpdateFieldsValid(String fullName, String username, String password) {
-        if (fullName.isEmpty() || username.isEmpty() || password.isEmpty()) {
+    protected void isUpdateFieldsValid(String email, String username, String password) {
+        if (email.isEmpty() || username.isEmpty() || password.isEmpty()) {
             throw new ResourceNotFoundException("Fields must be not empty.");
         }
     }

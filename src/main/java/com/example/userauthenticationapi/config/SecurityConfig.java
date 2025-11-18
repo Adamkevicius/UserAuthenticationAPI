@@ -35,11 +35,13 @@ public class SecurityConfig {
                     .csrf(AbstractHttpConfigurer::disable)
                     .authorizeHttpRequests(request -> request
                             .requestMatchers(
-                                    "/authentication/login",
-                                    "/authentication/signup",
-                                    "/authentication/verification-code/resend",
-                                    "/authentication/verification-code/verify",
-                                    "/oauth2/authentication").permitAll()
+                                    "/api/v1/user/**",
+                                    "/api/v1/authentication/login",
+                                    "/api/v1/authentication/signup",
+                                    "/api/v1/authentication/verification-code/resend",
+                                    "/api/v1/authentication/verification-code/verify",
+                                    "/api/v1/oauth2/authentication",
+                                    "/api/v1/user/reset-password").permitAll()
                             .anyRequest().authenticated()
                     )
                     .httpBasic(Customizer.withDefaults())
