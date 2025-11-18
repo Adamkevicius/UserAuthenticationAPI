@@ -18,7 +18,6 @@ public class SendGridConfig {
     @Value("${spring.sendgrid.sender-name}")
     private String senderName;
 
-    @Bean
     public Mail mail() {
         Email from  = new Email(senderName);
         Mail mail = new Mail();

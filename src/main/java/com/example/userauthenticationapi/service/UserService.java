@@ -51,27 +51,29 @@ public class UserService {
     }
 
     public UserResponse getById(Long id) {
-        User user = userRepo.getReferenceById(id);
+        if (id < 0) {
+            throw new ConflictException("Id can not be negative.");
+        }
+
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id: " + id + " not found."));
 
         return userMapper.toDto(user);
     }
 
     public UserResponse getByUsername(String username) {
-        User user = userRepo.getByUsername(username);
-
-        if (user == null) {
-            throw new ResourceNotFoundException("User with username: " + username + " not found.");
-        }
+        User user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User with username: " + username + " not found.")
+                );
 
         return userMapper.toDto(user);
     }
 
     public UserResponse getByEmail(String email) {
-        User user = userRepo.getByEmail(email);
-
-        if (user == null) {
-            throw new ResourceNotFoundException("User with username: " + email + " not found.");
-        }
+        User user = userRepo.findByEmail(email).orElseThrow(
+                () -> new ResourceNotFoundException("User with username: " + email + " not found.")
+        );
 
         return userMapper.toDto(user);
     }
@@ -90,13 +92,13 @@ public class UserService {
         isUpdateFieldsValid(
                 updateUserDto.getFullName(),
                 updateUserDto.getUsername(),
-                updateUserDto.getUsername()
+                updateUserDto.getPassword()
         );
 
         return userRepo.findById(id).map(user -> {
             user.setFullName(updateUserDto.getFullName());
             user.setUsername(updateUserDto.getUsername());
-            user.setPassword(passwordEncoder.encode(updateUserDto.getUsername()));
+            user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
             userRepo.save(user);
 
             return userMapper.toUpdateDto(user);
@@ -107,42 +109,44 @@ public class UserService {
         isUpdateFieldsValid(
                 updateUserDto.getFullName(),
                 updateUserDto.getUsername(),
-                updateUserDto.getUsername()
+                updateUserDto.getPassword()
         );
 
         return userRepo.findByUsername(username).map(user -> {
             user.setFullName(updateUserDto.getFullName());
             user.setUsername(updateUserDto.getUsername());
-            user.setPassword(passwordEncoder.encode(updateUserDto.getUsername()));
+            user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
             userRepo.save(user);
 
             return userMapper.toUpdateDto(user);
-        }).orElseThrow(() -> new ResourceNotFoundException("User with id: " + username + " not found."));
+        }).orElseThrow(() -> new ResourceNotFoundException("User with username: " + username + " not found."));
     }
 
     public UpdateUserResponse updateByEmail(String email, UpdateUserDto updateUserDto) {
         isUpdateFieldsValid(
                 updateUserDto.getFullName(),
                 updateUserDto.getUsername(),
-                updateUserDto.getUsername()
+                updateUserDto.getPassword()
         );
 
         return userRepo.findByEmail(email).map(user -> {
             user.setFullName(updateUserDto.getFullName());
             user.setUsername(updateUserDto.getUsername());
-            user.setPassword(passwordEncoder.encode(updateUserDto.getUsername()));
+            user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
             userRepo.save(user);
 
             return userMapper.toUpdateDto(user);
-        }).orElseThrow(() -> new ResourceNotFoundException("User with id: " + email + " not found."));
+        }).orElseThrow(() -> new ResourceNotFoundException("User with email: " + email + " not found."));
     }
 
-    public UpdateUserResponse updatePasswordByEmail(UpdatePasswordByEmailDto userDto) {
+    public UpdateUserResponse updatePasswordByEmail(UserPasswordUpdateDto userDto) {
         String email = userDto.getEmail();
-        User user = userRepo.getByEmail(email);
+        User user = userRepo.findByEmail(email).orElseThrow(
+                () -> new ResourceNotFoundException("User with email: " + email + " not found.")
+        );
 
-        if (user == null) {
-            throw new ResourceNotFoundException("User with username: " + email + " not found.");
+        if (userDto.getPassword().isEmpty()) {
+            throw new ConflictException("Password field must not be empty.");
         }
 
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
@@ -161,7 +165,7 @@ public class UserService {
 
     public DeleteUserResponse deleteByUsername(String username) {
         User user = userRepo.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User with id: " + username + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("User with username: " + username + " not found."));
 
         userRepo.deleteByUsername(username);
 
@@ -170,7 +174,7 @@ public class UserService {
 
     public DeleteUserResponse deleteByEmail(String email) {
         User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User with id: " + email + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("User with email: " + email + " not found."));
 
         userRepo.deleteByEmail(email);
 
@@ -187,7 +191,7 @@ public class UserService {
         userRepo.deleteAllInBatch();
     }
 
-    private void isUpdateFieldsValid(String fullName, String username, String password) {
+    protected void isUpdateFieldsValid(String fullName, String username, String password) {
         if (fullName.isEmpty() || username.isEmpty() || password.isEmpty()) {
             throw new ResourceNotFoundException("Fields must be not empty.");
         }

@@ -65,7 +65,7 @@ public class AuthenticationService {
     public void authenticate(LoginUserDto loginUserDto) {
         String email = loginUserDto.getEmail();
         String password = loginUserDto.getPassword();
-        User user = userRepo.findByEmail(loginUserDto.getEmail())
+        User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User with email " + email + " not found."));
 
         if (!passwordEncoder.matches(password, user.getPassword()))
