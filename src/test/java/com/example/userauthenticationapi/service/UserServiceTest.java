@@ -209,19 +209,19 @@ class UserServiceTest {
     @Test
     void testUpdateFieldsAreNotEmpty() {
         //  given
-        String fullName = "John Doe";
+        String email = "test@example.com";
         String username = "john";
         String password = "secret123";
 
         //  then
         assertDoesNotThrow(() -> underTest
-                .isUpdateFieldsValid(fullName , username, password));
+                .isUpdateFieldsValid(email , username, password));
     }
 
     @Test
     void testUpdateFieldsAreEmpty() {
         //  then
-        // IF FULL NAME IS EMPTY
+        // IF EMAIL IS EMPTY
         assertThatThrownBy(() -> underTest
                 .isUpdateFieldsValid("" , "john", "secret123"));
 
@@ -231,7 +231,7 @@ class UserServiceTest {
 
         //  IF PASSWORD IS EMPTY
         assertThatThrownBy(() -> underTest
-                .isUpdateFieldsValid("John Doe" , "john", ""));
+                .isUpdateFieldsValid("test@example.com" , "john", ""));
     }
 
     @Test
