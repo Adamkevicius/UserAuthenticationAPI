@@ -32,12 +32,13 @@ public class EmailService {
 
     public void sendEmail(User user) {
         Email to = new Email(user.getEmail());
+        String verificationCode = user.getVerificationCode();
 
         Mail mail = sendGrid.mail();
 
         Personalization personalization = new Personalization();
         personalization.addTo(to);
-        personalization.addDynamicTemplateData("verificationCode", user.getVerificationCode());
+        personalization.addDynamicTemplateData("verificationCode", verificationCode);
 
         mail.addPersonalization(personalization);
 

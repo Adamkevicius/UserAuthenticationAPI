@@ -46,12 +46,6 @@ public class UserMapper {
     }
 
     public List<UserResponse> toListDto(List<User> userList) {
-        List<UserResponse> userListDto = new ArrayList<>();
-
-        for (User user : userList) {
-            userListDto.add(toDto(user));
-        }
-
-        return userListDto;
+        return userList.stream().map(this::toDto).toList();
     }
 }
