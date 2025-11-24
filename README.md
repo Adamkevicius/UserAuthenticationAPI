@@ -1,7 +1,7 @@
 <div>
   <h1> 📌 User Authentication Web Service </h1>
   <p>
-    This is a User Authentication Web Service build with Java Spring Boot. 
+    This is a User Authentication Web Service built with Java Spring Boot. 
     It provides secure user registration, login and email verification functionalities.
   </p>
 
@@ -13,7 +13,7 @@
     <li> JWT-based Authentication </li>
   </ul>
 
-  <h2> Used technologies </h2>
+  <h2> Core Technologies </h2>
   <ul>
     <li> Spring Boot </li>
     <li> Spring Security </li>
