@@ -78,6 +78,14 @@ public class UserService {
         return userMapper.toDto(user);
     }
 
+    public Long getIdByEmail(String email) {
+        User user = userRepo.findByEmail(email).orElseThrow(
+                () -> new ResourceNotFoundException("User with email: " + email + " not found.")
+        );
+
+        return user.getId();
+    }
+
     public List<UserResponse> getAll() {
         List<User> userList = userRepo.findAll();
 

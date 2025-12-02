@@ -6,7 +6,6 @@ import com.example.userauthenticationapi.dto.request.RegisterUserDto;
 import com.example.userauthenticationapi.dto.request.ResendVerificationCodeDto;
 import com.example.userauthenticationapi.dto.request.VerifyUserDto;
 import com.example.userauthenticationapi.exception.ConflictException;
-import com.example.userauthenticationapi.exception.ResourceNotFoundException;
 import com.example.userauthenticationapi.exception.ValidationException;
 import com.example.userauthenticationapi.model.User;
 import com.example.userauthenticationapi.repo.UserRepo;
