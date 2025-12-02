@@ -87,6 +87,22 @@ public class UserController {
                 );
     }
 
+    @GetMapping("/id/{email}")
+    public ResponseEntity<ApiSuccessResponse> getIdByEmail(@PathVariable String email) {
+        Long id = userService.getIdByEmail(email);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new ApiSuccessResponse(
+                                true,
+                                "Success!",
+                                id.toString(),
+                                LocalDateTime.now()
+                        )
+                );
+    }
+
     @GetMapping
     public ResponseEntity<ApiSuccessResponse> getAll() {
         List<UserResponse> userList = userService.getAll();
@@ -104,7 +120,7 @@ public class UserController {
     }
 
     @PutMapping("/by-id/{id}")
-    public ResponseEntity<ApiSuccessResponse> getById(@PathVariable Long id, @RequestBody UpdateUserDto updateUserDto) {
+    public ResponseEntity<ApiSuccessResponse> updateById(@PathVariable Long id, @RequestBody UpdateUserDto updateUserDto) {
         UpdateUserResponse updatedUser = userService.updateById(id, updateUserDto);
 
         return ResponseEntity
@@ -120,7 +136,7 @@ public class UserController {
     }
 
     @PutMapping("/by-username/{username}")
-    public ResponseEntity<ApiSuccessResponse> getByUsername(@PathVariable String username, @RequestBody UpdateUserDto updateUserDto) {
+    public ResponseEntity<ApiSuccessResponse> updateByUsername(@PathVariable String username, @RequestBody UpdateUserDto updateUserDto) {
         UpdateUserResponse updatedUser = userService.updateByUsername(username, updateUserDto);
 
         return ResponseEntity
@@ -136,7 +152,7 @@ public class UserController {
     }
 
     @PutMapping("/by-email/{email}")
-    public ResponseEntity<ApiSuccessResponse> getByEmail(@PathVariable String email, @RequestBody UpdateUserDto updateUserDto) {
+    public ResponseEntity<ApiSuccessResponse> updateByEmail(@PathVariable String email, @RequestBody UpdateUserDto updateUserDto) {
         UpdateUserResponse updatedUser = userService.updateByEmail(email, updateUserDto);
 
         return ResponseEntity

@@ -178,6 +178,24 @@ class UserServiceTest {
     }
 
     @Test
+    void testShouldGetIdByEmail() {
+        //  given
+        String givenEmail = "test@gmail.com";
+        User givenUser = Instancio.create(User.class);
+        givenUser.setEmail(givenEmail);
+
+        given(userRepo.findByEmail(givenEmail)).willReturn(Optional.of(givenUser));
+
+        //  when
+        long expected = underTest.getIdByEmail(givenEmail);
+
+        //  then
+        verify(userRepo).findByEmail(givenEmail);
+        assertEquals(givenUser.getId(), expected);
+    }
+
+
+    @Test
     void testShouldGetAll() {
         //  given
         List<User> givenList = Instancio.ofList(User.class).size(5).create();
